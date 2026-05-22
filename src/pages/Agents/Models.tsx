@@ -109,6 +109,7 @@ import {
   PROVIDER_AVATAR_URLS,
   SGLANG_PROVIDER_ID,
   toEndpointBaseUrl,
+  toDockerReachableLocalEndpoint,
   VLLM_PROVIDER_ID,
 } from './localModels';
 
@@ -777,6 +778,7 @@ export default function SettingModels() {
       setLocalVerifying(false);
       return;
     }
+    const serverEndpoint = toDockerReachableLocalEndpoint(currentEndpoint);
     try {
       if (localPlatform === LLAMA_CPP_PROVIDER_ID) {
         await checkLlamaCppHealth(currentEndpoint);
@@ -826,7 +828,7 @@ export default function SettingModels() {
             model_platform: localPlatform,
             model_type: currentType,
             api_key: 'not-required',
-            url: currentEndpoint,
+            url: serverEndpoint,
           });
           if (res.is_tool_calls && res.is_valid) {
             console.log('success');
@@ -871,7 +873,7 @@ export default function SettingModels() {
       const data: any = {
         provider_name: localPlatform,
         api_key: 'not-required',
-        endpoint_url: currentEndpoint, // Save base URL without specific endpoints
+        endpoint_url: serverEndpoint, // Save the URL that Docker-hosted workers can reach
         is_valid: true,
         model_type: currentType,
         encrypted_config: {
