@@ -178,3 +178,20 @@ export const toDockerReachableLocalEndpoint = (endpoint: string): string => {
 
   return trimmed;
 };
+
+export const toBrowserReachableLocalEndpoint = (endpoint: string): string => {
+  const trimmed = endpoint.trim();
+  if (!trimmed) return trimmed;
+
+  try {
+    const parsed = new URL(trimmed);
+    if (parsed.hostname === 'host.docker.internal') {
+      parsed.hostname = 'localhost';
+      return parsed.toString().replace(/\/$/, '');
+    }
+  } catch {
+    return trimmed;
+  }
+
+  return trimmed;
+};

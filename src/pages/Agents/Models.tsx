@@ -108,6 +108,7 @@ import {
   OLLAMA_PROVIDER_ID,
   PROVIDER_AVATAR_URLS,
   SGLANG_PROVIDER_ID,
+  toBrowserReachableLocalEndpoint,
   toEndpointBaseUrl,
   toDockerReachableLocalEndpoint,
   VLLM_PROVIDER_ID,
@@ -303,7 +304,8 @@ export default function SettingModels() {
         },
       }));
       try {
-        const baseUrl = toEndpointBaseUrl(url);
+        const browserUrl = toBrowserReachableLocalEndpoint(url);
+        const baseUrl = toEndpointBaseUrl(browserUrl);
         const response = await fetch(`${baseUrl}${option.fetchPath}`);
         if (!response.ok) throw new Error(`Failed: ${response.status}`);
 
@@ -407,8 +409,9 @@ export default function SettingModels() {
           const platform =
             local.encrypted_config?.model_platform || local.provider_name;
           // Auto-populate platform default endpoint if not set
-          endpoints[platform] =
-            local.endpoint_url || getDefaultLocalEndpoint(platform);
+          endpoints[platform] = toBrowserReachableLocalEndpoint(
+            local.endpoint_url || getDefaultLocalEndpoint(platform)
+          );
           types[platform] = local.encrypted_config?.model_type || '';
           providerIds[platform] = local.id;
 

@@ -32,6 +32,8 @@ try {
   // git not available (CI, packaged build, etc.)
 }
 
+process.env.VITE_APP_VERSION = pkg.version;
+
 // https://vitejs.dev/config/
 export default defineConfig(({ command, mode }) => {
   rmSync('dist-electron', { recursive: true, force: true });

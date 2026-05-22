@@ -18,6 +18,8 @@ const invoke = async (channel: string, ...args: any[]) => {
   switch (channel) {
     case "check-tool-installed":
       return { success: true, isInstalled: true };
+    case "get-app-version":
+      return import.meta.env.VITE_APP_VERSION || "0.0.91";
     case "get-backend-port":
       return getBackendPort();
     case "mcp-list":
