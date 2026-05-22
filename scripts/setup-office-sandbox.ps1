@@ -1,6 +1,7 @@
 param(
   [switch]$Start,
-  [switch]$Recreate
+  [switch]$Recreate,
+  [int]$ApiPort
 )
 
 $ErrorActionPreference = "Stop"
@@ -47,6 +48,10 @@ function New-Secret {
   return [Convert]::ToBase64String($buffer).TrimEnd("=").Replace("+", "-").Replace("/", "_")
 }
 
+if ($PSBoundParameters.ContainsKey("ApiPort")) {
+  $env:EIGENT_API_PORT = $ApiPort.ToString()
+}
+
 if ((Test-Path -LiteralPath $envPath) -and -not $Recreate) {
   Write-Host "Using existing server\.env.office"
 } else {
@@ -71,6 +76,17 @@ if ($LASTEXITCODE -eq 0 -and $commit) {
   $env:EIGENT_SERVER_GIT_COMMIT = $commit.Trim()
 }
 
+$officeApiPort = $env:EIGENT_API_PORT
+if (-not $officeApiPort) {
+  $envFilePort = Select-String -LiteralPath $envPath -Pattern '^EIGENT_API_PORT=(.+)$' -ErrorAction SilentlyContinue | Select-Object -First 1
+  if ($envFilePort) {
+    $officeApiPort = $envFilePort.Matches[0].Groups[1].Value.Trim()
+  }
+}
+if (-not $officeApiPort) {
+  $officeApiPort = "3001"
+}
+
 Push-Location $serverDir
 try {
   Invoke-Checked "docker" @("compose", "--env-file", ".env.office", "-f", "docker-compose.office.yml", "config") -Quiet
@@ -78,7 +94,7 @@ try {
 
   if ($Start) {
     Invoke-Checked "docker" @("compose", "--env-file", ".env.office", "-f", "docker-compose.office.yml", "up", "--build", "-d")
-    Write-Host "Office sandbox is starting at http://127.0.0.1:3001"
+    Write-Host "Office sandbox is starting at http://127.0.0.1:$officeApiPort"
   } else {
     Write-Host "Run with -Start when you want to build and start the containers."
   }

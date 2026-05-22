@@ -12,7 +12,11 @@ npm install
 npm run dev
 ```
 
-The script generates `server/.env.office`, validates `server/docker-compose.office.yml`, and starts the API on `127.0.0.1:3001`. PostgreSQL and Redis stay inside Docker and are not exposed to the LAN.
+The script generates `server/.env.office`, validates `server/docker-compose.office.yml`, and starts the API on `127.0.0.1:3001`. PostgreSQL and Redis stay inside Docker and are not exposed to the LAN. If another local service already uses `3001`, start the sandbox on an alternate loopback port:
+
+```powershell
+.\scripts\setup-office-sandbox.ps1 -Start -ApiPort 3002
+```
 
 ## Security Review Summary
 
@@ -84,7 +88,7 @@ Larger office topology:
 
 - Run `scripts/setup-office-sandbox.ps1 -Start`.
 - Confirm `server/.env.office` is never committed.
-- Confirm `http://127.0.0.1:3001/health` returns `status: ok`.
+- Confirm `http://127.0.0.1:3001/health` returns `status: ok`, or use the alternate `-ApiPort` value.
 - Use `.env.development` local proxy settings for frontend development.
 - Before production use, review every configured model provider and MCP connector with the office data policy.
 - Schedule daily PostgreSQL backups and monthly restore tests.

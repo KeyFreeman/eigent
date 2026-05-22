@@ -40,6 +40,12 @@ For architecture office workstations or any environment that should avoid cloud-
 
 This generates `server/.env.office`, binds the API to `127.0.0.1:3001`, keeps PostgreSQL and Redis off the LAN, and uses generated local secrets. See `docs/office/TW_ARCHITECTURE.md` for the Taiwan architecture office deployment notes.
 
+If port `3001` is already in use on the workstation, choose a loopback-only alternate port:
+
+```powershell
+.\scripts\setup-office-sandbox.ps1 -Start -ApiPort 3002
+```
+
 #### Hosting Configuration for Triggers
 
 **Important**: If you plan to use **app triggers** (incoming webhooks), you must host this server with a **publicly accessible domain**. App triggers require external services to reach your server via HTTPS callback URLs.
