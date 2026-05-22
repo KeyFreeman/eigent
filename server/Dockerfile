@@ -46,7 +46,6 @@ RUN uv run pybabel extract -F babel.cfg -o messages.pot .  && \
     uv run pybabel init -i messages.pot -d lang -l zh_CN  && \
     uv run pybabel compile -d lang -l zh_CN
 
-
 # Install netcat for database connectivity check
 RUN apt-get update -o Acquire::Retries=3 && apt-get install -y --no-install-recommends curl netcat-openbsd && rm -rf /var/lib/apt/lists/*
 
@@ -62,9 +61,8 @@ RUN sed -i 's/\r$//' /app/celery/worker/start && chmod +x /app/celery/worker/sta
 RUN sed -i 's/\r$//' /app/celery/beat/start && chmod +x /app/celery/beat/start
 
 # Bake the latest server/ commit into the image for stale-server detection.
-# Uses --mount=type=bind to access .git without adding it to a layer.
-RUN --mount=type=bind,source=.git,target=/tmp/.git \
-    echo "EIGENT_SERVER_GIT_COMMIT=$(git --git-dir=/tmp/.git log -1 --format=%H -- server/ 2>/dev/null || echo unknown)" > /app/.image_env
+ARG EIGENT_SERVER_GIT_COMMIT=unknown
+RUN echo "EIGENT_SERVER_GIT_COMMIT=${EIGENT_SERVER_GIT_COMMIT}" > /app/.image_env
 
 # Reset the entrypoint, don't invoke `uv`
 ENTRYPOINT []

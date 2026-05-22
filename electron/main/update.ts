@@ -30,12 +30,15 @@ const { autoUpdater } = createRequire(import.meta.url)('electron-updater');
 
 export function update(win: Electron.BrowserWindow) {
   // When set to false, the update download will be triggered through the API
-  autoUpdater.verifyUpdateCodeSignature = false;
+  autoUpdater.verifyUpdateCodeSignature =
+    process.env.EIGENT_DISABLE_UPDATE_SIGNATURE_CHECK === 'true'
+      ? false
+      : true;
   autoUpdater.autoDownload = false;
   autoUpdater.disableWebInstaller = false;
   autoUpdater.allowDowngrade = false;
 
-  autoUpdater.forceDevUpdateConfig = true;
+  autoUpdater.forceDevUpdateConfig = !app.isPackaged;
 
   // start check
   autoUpdater.on('checking-for-update', function () {});

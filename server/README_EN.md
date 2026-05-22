@@ -30,6 +30,16 @@ Note: All the above data is stored in the local PostgreSQL volume in Docker (see
 - **Python**: 3.10.\* (3.10.15 recommended)
 - **Node.js**: >=18.0.0 <23.0.0
 
+#### Office Sandbox for Local-First Deployment
+
+For architecture office workstations or any environment that should avoid cloud-connected defaults, use the hardened office compose file:
+
+```powershell
+.\scripts\setup-office-sandbox.ps1 -Start
+```
+
+This generates `server/.env.office`, binds the API to `127.0.0.1:3001`, keeps PostgreSQL and Redis off the LAN, and uses generated local secrets. See `docs/office/TW_ARCHITECTURE.md` for the Taiwan architecture office deployment notes.
+
 #### Hosting Configuration for Triggers
 
 **Important**: If you plan to use **app triggers** (incoming webhooks), you must host this server with a **publicly accessible domain**. App triggers require external services to reach your server via HTTPS callback URLs.
