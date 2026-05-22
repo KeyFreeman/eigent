@@ -13,7 +13,6 @@
 // ========= Copyright 2025-2026 @ Eigent.ai All Rights Reserved. =========
 
 import {
-  fetchPost,
   proxyFetchDelete,
   proxyFetchGet,
   proxyFetchPost,
@@ -632,7 +631,7 @@ export default function SettingModels() {
 
     console.log(form[idx]);
     try {
-      const res = await fetchPost('/model/validate', {
+      const res = await proxyFetchPost('/api/model/validate', {
         model_platform: item.id,
         model_type: form[idx].model_type,
         api_key: form[idx].apiKey || null,
@@ -823,7 +822,7 @@ export default function SettingModels() {
       // Current validation flow is not fully compatible.
       if (localPlatform !== LLAMA_CPP_PROVIDER_ID) {
         try {
-          const res = await fetchPost('/model/validate', {
+          const res = await proxyFetchPost('/api/model/validate', {
             model_platform: localPlatform,
             model_type: currentType,
             api_key: 'not-required',

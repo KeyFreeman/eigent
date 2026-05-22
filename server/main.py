@@ -35,6 +35,7 @@ from fastapi_babel import BabelMiddleware
 from app import api, router
 from app.core.babel import babel_configs
 from app.core.environment import auto_include_routers, env
+from app.api.model_controller import router as model_validation_router
 from app.shared.exception.handlers import register_exception_handlers
 from app.shared.middleware import TraceIDMiddleware
 from app.shared.middleware.cors import get_cors_middleware
@@ -53,6 +54,8 @@ prefix = env("url_prefix", "")
 auto_include_routers(router, "", "app/domains")
 auto_include_routers(router, "", "app/api")
 api.include_router(router, prefix=f"{prefix}/v1")
+api.include_router(model_validation_router, prefix=prefix)
+api.include_router(model_validation_router)
 
 # Server version — read once at import time so it reflects the running code
 try:
