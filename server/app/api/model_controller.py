@@ -83,11 +83,16 @@ async def _try_validate_once(
         "model": request.model_type,
         "messages": [
             {
+                "role": "system",
+                "content": "You must call the provided tool. Do not answer in natural language.",
+            },
+            {
                 "role": "user",
-                "content": "Reply by calling the provided office_ping tool.",
+                "content": "Call office_ping with ok set to true.",
             }
         ],
         "stream": False,
+        "temperature": 0,
         "max_tokens": 64,
         "tools": [
             {
@@ -103,7 +108,7 @@ async def _try_validate_once(
                 },
             }
         ],
-        "tool_choice": "auto",
+        "tool_choice": "required",
     }
 
     try:
