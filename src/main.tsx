@@ -24,7 +24,10 @@ import App from './App';
 import { ThemeProvider } from './components/ThemeProvider';
 import { TooltipProvider } from './components/ui/tooltip';
 import './i18n';
+import { installBrowserElectronShim } from './lib/browserElectronShim';
 import './style/index.css';
+
+installBrowserElectronShim();
 
 // If you want use Node.js, the`nodeIntegration` needs to be enabled in the Main process.
 // import './demos/node'

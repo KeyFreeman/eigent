@@ -18,6 +18,12 @@ The script generates `server/.env.office`, validates `server/docker-compose.offi
 .\scripts\setup-office-sandbox.ps1 -Start -ApiPort 3002
 ```
 
+For browser-based UI development, start the frontend with the same API port:
+
+```powershell
+.\scripts\start-office-ui.ps1 -ApiPort 3002
+```
+
 ## Security Review Summary
 
 Reviewed risk surfaces:

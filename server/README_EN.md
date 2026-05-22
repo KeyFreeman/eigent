@@ -46,6 +46,12 @@ If port `3001` is already in use on the workstation, choose a loopback-only alte
 .\scripts\setup-office-sandbox.ps1 -Start -ApiPort 3002
 ```
 
+Then start the browser-based development UI from the repository root:
+
+```powershell
+.\scripts\start-office-ui.ps1 -ApiPort 3002
+```
+
 #### Hosting Configuration for Triggers
 
 **Important**: If you plan to use **app triggers** (incoming webhooks), you must host this server with a **publicly accessible domain**. App triggers require external services to reach your server via HTTPS callback URLs.
