@@ -2160,8 +2160,9 @@ function registerIpcHandlers() {
     const childWindow = new BrowserWindow({
       webPreferences: {
         preload,
-        nodeIntegration: true,
-        contextIsolation: false,
+        nodeIntegration: false,
+        contextIsolation: true,
+        sandbox: true,
       },
     });
 
@@ -2787,9 +2788,10 @@ async function createWindow() {
       // Use a dedicated partition for main window to isolate from webviews
       // This ensures main window's auth data (localStorage) is stored separately and persists across restarts
       partition: 'persist:main_window',
-      webSecurity: false,
+      webSecurity:
+        process.env.EIGENT_DISABLE_WEB_SECURITY === 'true' ? false : true,
       preload,
-      nodeIntegration: true,
+      nodeIntegration: false,
       contextIsolation: true,
       webviewTag: true,
       spellcheck: false,

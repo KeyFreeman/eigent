@@ -161,3 +161,37 @@ export const appendV1ToEndpoint = (endpoint: string): string => {
     return `${trimmed.replace(/\/+$/, '')}/v1`;
   }
 };
+
+export const toDockerReachableLocalEndpoint = (endpoint: string): string => {
+  const trimmed = endpoint.trim();
+  if (!trimmed) return trimmed;
+
+  try {
+    const parsed = new URL(trimmed);
+    if (parsed.hostname === 'localhost' || parsed.hostname === '127.0.0.1') {
+      parsed.hostname = 'host.docker.internal';
+      return parsed.toString().replace(/\/$/, '');
+    }
+  } catch {
+    return trimmed;
+  }
+
+  return trimmed;
+};
+
+export const toBrowserReachableLocalEndpoint = (endpoint: string): string => {
+  const trimmed = endpoint.trim();
+  if (!trimmed) return trimmed;
+
+  try {
+    const parsed = new URL(trimmed);
+    if (parsed.hostname === 'host.docker.internal') {
+      parsed.hostname = 'localhost';
+      return parsed.toString().replace(/\/$/, '');
+    }
+  } catch {
+    return trimmed;
+  }
+
+  return trimmed;
+};

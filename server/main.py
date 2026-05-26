@@ -26,6 +26,7 @@ import subprocess
 from importlib.metadata import version as pkg_version
 
 from fastapi.staticfiles import StaticFiles
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi_pagination import add_pagination
 from loguru import logger as loguru_logger
 
@@ -34,12 +35,17 @@ from fastapi_babel import BabelMiddleware
 from app import api, router
 from app.core.babel import babel_configs
 from app.core.environment import auto_include_routers, env
+from app.api.chat_controller import router as office_chat_router
+from app.api.model_controller import router as model_validation_router
+from app.api.office_compat_controller import router as office_compat_router
 from app.shared.exception.handlers import register_exception_handlers
 from app.shared.middleware import TraceIDMiddleware
+from app.shared.middleware.cors import get_cors_middleware
 from app.shared.logging import trace_filter
 
 # Register exception handlers and i18n middleware
 register_exception_handlers(api)
+api.add_middleware(CORSMiddleware, **get_cors_middleware())
 api.add_middleware(BabelMiddleware, babel_configs=babel_configs)
 
 std_logger = logging.getLogger("server_main")
@@ -50,6 +56,12 @@ prefix = env("url_prefix", "")
 auto_include_routers(router, "", "app/domains")
 auto_include_routers(router, "", "app/api")
 api.include_router(router, prefix=f"{prefix}/v1")
+api.include_router(office_chat_router, prefix=prefix)
+api.include_router(office_chat_router)
+api.include_router(office_compat_router, prefix=prefix)
+api.include_router(office_compat_router)
+api.include_router(model_validation_router, prefix=prefix)
+api.include_router(model_validation_router)
 
 # Server version — read once at import time so it reflects the running code
 try:

@@ -15,6 +15,7 @@
   - `GET /configs`, `POST /configs`, `PUT /configs/{id}`, `DELETE /configs/{id}`, `GET /config/info`
 - Chat & Data
   - History, snapshots, sharing, etc. in `app/domains/chat/api/`, all persisted to local DB
+  - Office local mode exposes `POST /chat` for SSE streaming to the selected local/OpenAI-compatible model and compatibility routes for `/task/...` UI calls
 - MCP Management (import local/remote MCP servers)
   - `GET /mcps`, `POST /mcp/install`, `POST /mcp/import/{Local|Remote}`, etc.
 
@@ -29,6 +30,28 @@ Note: All the above data is stored in the local PostgreSQL volume in Docker (see
 - **Docker Desktop**: Installed and running
 - **Python**: 3.10.\* (3.10.15 recommended)
 - **Node.js**: >=18.0.0 <23.0.0
+
+#### Office Sandbox for Local-First Deployment
+
+For architecture office workstations or any environment that should avoid cloud-connected defaults, use the hardened office compose file:
+
+```powershell
+.\scripts\setup-office-sandbox.ps1 -Start
+```
+
+This generates `server/.env.office`, binds the API to `127.0.0.1:3001`, keeps PostgreSQL and Redis off the LAN, and uses generated local secrets. See `docs/office/TW_ARCHITECTURE.md` for the Taiwan architecture office deployment notes.
+
+If port `3001` is already in use on the workstation, choose a loopback-only alternate port:
+
+```powershell
+.\scripts\setup-office-sandbox.ps1 -Start -ApiPort 3002
+```
+
+Then start the browser-based development UI from the repository root:
+
+```powershell
+.\scripts\start-office-ui.ps1 -ApiPort 3002
+```
 
 #### Hosting Configuration for Triggers
 
@@ -138,3 +161,13 @@ uv run pybabel compile -d lang -l zh_CN
 ```
 
 For a fully offline environment, only use local models and local MCP servers, and avoid configuring any external Providers or remote MCP addresses.
+
+### Office Local Mode Execution Notes
+
+The office compose profile includes a compatibility layer for the browser UI:
+
+- `POST /chat`: streams a direct local LLM response through SSE.
+- `PUT /task/{project_id}`, `POST /task/{project_id}/start`, `PUT /task/{project_id}/take-control`: accept task state updates from the UI so local deployments do not fail on missing upstream runtime endpoints.
+- `POST /chat/{project_id}/human-reply`, `POST /chat/{project_id}/skip-task`, `DELETE /chat/{project_id}`: no-op compatibility endpoints for current UI controls.
+
+These routes are intended to keep the local-first deployment usable while the full multi-agent tool execution backend is being hardened for office use.

@@ -1,0 +1,135 @@
+name: eigent-office
+
+x-app-common: &app-common
+  image: eigent-office-server:local
+  build:
+    context: ..
+    dockerfile: server/Dockerfile
+    args:
+      database_url: postgresql://${POSTGRES_USER:?POSTGRES_USER is required}:${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}@postgres:5432/${POSTGRES_DB:-eigent}
+      EIGENT_SERVER_GIT_COMMIT: ${EIGENT_SERVER_GIT_COMMIT:-unknown}
+  env_file:
+    - .env.office
+  environment:
+    database_url: postgresql://${POSTGRES_USER:?POSTGRES_USER is required}:${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}@postgres:5432/${POSTGRES_DB:-eigent}
+    redis_url: redis://:${REDIS_PASSWORD:?REDIS_PASSWORD is required}@redis:6379/0
+    celery_broker_url: redis://:${REDIS_PASSWORD:?REDIS_PASSWORD is required}@redis:6379/0
+    celery_result_url: redis://:${REDIS_PASSWORD:?REDIS_PASSWORD is required}@redis:6379/0
+    SESSION_REDIS_URL: redis://:${REDIS_PASSWORD:?REDIS_PASSWORD is required}@redis:6379/1
+    PYTHONDONTWRITEBYTECODE: "1"
+  security_opt:
+    - no-new-privileges:true
+  cap_drop:
+    - ALL
+  tmpfs:
+    - /tmp:rw,noexec,nosuid,size=256m
+  depends_on:
+    postgres:
+      condition: service_healthy
+    redis:
+      condition: service_healthy
+  networks:
+    - eigent_backend
+  restart: unless-stopped
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: eigent_office_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-eigent}
+      POSTGRES_USER: ${POSTGRES_USER:?POSTGRES_USER is required}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
+      POSTGRES_INITDB_ARGS: "--encoding=UTF-8 --lc-collate=C --lc-ctype=C --auth-host=scram-sha-256"
+    command:
+      - postgres
+      - -c
+      - password_encryption=scram-sha-256
+      - -c
+      - log_connections=on
+      - -c
+      - log_disconnections=on
+      - -c
+      - shared_buffers=256MB
+      - -c
+      - max_connections=100
+    volumes:
+      - eigent_office_postgres_data:/var/lib/postgresql/data
+      - ./backups:/backups
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U \"$${POSTGRES_USER}\" -d \"$${POSTGRES_DB}\""]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - eigent_backend
+
+  redis:
+    image: redis:7-alpine
+    container_name: eigent_office_redis
+    restart: unless-stopped
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD:?REDIS_PASSWORD is required}
+    command:
+      - redis-server
+      - --appendonly
+      - "yes"
+      - --requirepass
+      - ${REDIS_PASSWORD:?REDIS_PASSWORD is required}
+    volumes:
+      - eigent_office_redis_data:/data
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli -a \"$${REDIS_PASSWORD}\" ping | grep PONG"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - eigent_backend
+
+  api:
+    <<: *app-common
+    container_name: eigent_office_api
+    ports:
+      - "127.0.0.1:${EIGENT_API_PORT:-3001}:5678"
+    volumes:
+      - eigent_office_runtime:/app/runtime
+      - eigent_office_public:/app/app/public
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5678/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  celery_worker:
+    <<: *app-common
+    container_name: eigent_office_celery_worker
+    command: /app/celery/worker/start
+    volumes:
+      - eigent_office_runtime:/app/runtime
+      - eigent_office_public:/app/app/public
+    healthcheck:
+      test: ["CMD-SHELL", "celery -A app.core.celery inspect ping -d celery@$$HOSTNAME"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  celery_beat:
+    <<: *app-common
+    container_name: eigent_office_celery_beat
+    command: /app/celery/beat/start
+    volumes:
+      - eigent_office_runtime:/app/runtime
+      - eigent_office_public:/app/app/public
+
+volumes:
+  eigent_office_postgres_data:
+  eigent_office_redis_data:
+  eigent_office_runtime:
+  eigent_office_public:
+
+networks:
+  eigent_backend:
+    driver: bridge

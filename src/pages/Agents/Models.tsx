@@ -13,7 +13,6 @@
 // ========= Copyright 2025-2026 @ Eigent.ai All Rights Reserved. =========
 
 import {
-  fetchPost,
   proxyFetchDelete,
   proxyFetchGet,
   proxyFetchPost,
@@ -109,7 +108,9 @@ import {
   OLLAMA_PROVIDER_ID,
   PROVIDER_AVATAR_URLS,
   SGLANG_PROVIDER_ID,
+  toBrowserReachableLocalEndpoint,
   toEndpointBaseUrl,
+  toDockerReachableLocalEndpoint,
   VLLM_PROVIDER_ID,
 } from './localModels';
 
@@ -303,7 +304,8 @@ export default function SettingModels() {
         },
       }));
       try {
-        const baseUrl = toEndpointBaseUrl(url);
+        const browserUrl = toBrowserReachableLocalEndpoint(url);
+        const baseUrl = toEndpointBaseUrl(browserUrl);
         const response = await fetch(`${baseUrl}${option.fetchPath}`);
         if (!response.ok) throw new Error(`Failed: ${response.status}`);
 
@@ -407,8 +409,9 @@ export default function SettingModels() {
           const platform =
             local.encrypted_config?.model_platform || local.provider_name;
           // Auto-populate platform default endpoint if not set
-          endpoints[platform] =
-            local.endpoint_url || getDefaultLocalEndpoint(platform);
+          endpoints[platform] = toBrowserReachableLocalEndpoint(
+            local.endpoint_url || getDefaultLocalEndpoint(platform)
+          );
           types[platform] = local.encrypted_config?.model_type || '';
           providerIds[platform] = local.id;
 
@@ -632,7 +635,7 @@ export default function SettingModels() {
 
     console.log(form[idx]);
     try {
-      const res = await fetchPost('/model/validate', {
+      const res = await proxyFetchPost('/api/model/validate', {
         model_platform: item.id,
         model_type: form[idx].model_type,
         api_key: form[idx].apiKey || null,
@@ -778,6 +781,7 @@ export default function SettingModels() {
       setLocalVerifying(false);
       return;
     }
+    const serverEndpoint = toDockerReachableLocalEndpoint(currentEndpoint);
     try {
       if (localPlatform === LLAMA_CPP_PROVIDER_ID) {
         await checkLlamaCppHealth(currentEndpoint);
@@ -823,11 +827,11 @@ export default function SettingModels() {
       // Current validation flow is not fully compatible.
       if (localPlatform !== LLAMA_CPP_PROVIDER_ID) {
         try {
-          const res = await fetchPost('/model/validate', {
+          const res = await proxyFetchPost('/api/model/validate', {
             model_platform: localPlatform,
             model_type: currentType,
             api_key: 'not-required',
-            url: currentEndpoint,
+            url: serverEndpoint,
           });
           if (res.is_tool_calls && res.is_valid) {
             console.log('success');
@@ -872,7 +876,7 @@ export default function SettingModels() {
       const data: any = {
         provider_name: localPlatform,
         api_key: 'not-required',
-        endpoint_url: currentEndpoint, // Save base URL without specific endpoints
+        endpoint_url: serverEndpoint, // Save the URL that Docker-hosted workers can reach
         is_valid: true,
         model_type: currentType,
         encrypted_config: {

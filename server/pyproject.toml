@@ -5,7 +5,7 @@ description = "Eigent"
 readme = "README.md"
 requires-python = ">=3.12,<3.13"
 dependencies = [
-    "alembic>=1.15.2",
+    "alembic>=1.15.2,<1.17.0",
     "openai>=1.99.3,<2",
     "camel-ai==0.2.90a6",
     "pydantic[email]>=2.11.1",
@@ -18,6 +18,7 @@ dependencies = [
     "pydantic-i18n>=0.4.5",
     "pyjwt>=2.10.1",
     "python-dotenv>=1.1.0",
+    "sqlalchemy>=2.0.40,<2.0.46",
     "sqlalchemy-utils>=0.41.2",
     "sqlmodel>=0.0.24",
     "pandas>=2.2.3",
@@ -36,7 +37,8 @@ dependencies = [
     "exa-py>=1.14.16",
     "fastapi-limiter>=0.1.6,<0.2.0",
     "slack-sdk>=3.39.0",
-    "celery>=5.6.2",
+    "uvicorn[standard]>=0.34.2,<0.36.0",
+    "celery>=5.5.3,<5.6.0",
     "redis>=7.2.1",
     "loguru>=0.7.3",
 ]

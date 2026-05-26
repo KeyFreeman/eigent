@@ -32,6 +32,8 @@ try {
   // git not available (CI, packaged build, etc.)
 }
 
+process.env.VITE_APP_VERSION = pkg.version;
+
 // https://vitejs.dev/config/
 export default defineConfig(({ command, mode }) => {
   rmSync('dist-electron', { recursive: true, force: true });
@@ -105,7 +107,9 @@ export default defineConfig(({ command, mode }) => {
       open: false,
       ...(process.env.VSCODE_DEBUG &&
         (() => {
-          const url = new URL(pkg.debug.env.VITE_DEV_SERVER_URL);
+          const url = new URL(
+            process.env.VITE_SITE_URL || pkg.debug.env.VITE_DEV_SERVER_URL
+          );
           return {
             host: url.hostname,
             port: +url.port,

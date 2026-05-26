@@ -25,14 +25,17 @@ logger.info(
     extra={
         "database_url_prefix": env_or_fail("database_url")[:20] + "...",
         "debug_mode": env("debug") == "on",
-        "pool_size": 36,
+        "pool_size": int(env("DB_POOL_SIZE", "10")),
     },
 )
 
 engine = create_engine(
     env_or_fail("database_url"),
     echo=True if env("debug") == "on" else False,
-    pool_size=36,
+    pool_size=int(env("DB_POOL_SIZE", "10")),
+    max_overflow=int(env("DB_MAX_OVERFLOW", "20")),
+    pool_pre_ping=True,
+    pool_recycle=int(env("DB_POOL_RECYCLE_SECONDS", "1800")),
 )
 
 logger.info("Database engine initialized successfully")

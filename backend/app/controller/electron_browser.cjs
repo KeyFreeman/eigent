@@ -71,9 +71,10 @@ app.whenReady().then(async () => {
     height: 900,
     title: 'Eigent Browser - Login',
     webPreferences: {
-      nodeIntegration: true,
-      contextIsolation: false,
+      nodeIntegration: false,
+      contextIsolation: true,
       webviewTag: true,
+      webSecurity: true,
     },
   });
 
@@ -216,17 +217,13 @@ app.whenReady().then(async () => {
 
     // Show info panel
     infoBtn.addEventListener('click', () => {
-      const { ipcRenderer } = require('electron');
-
-      // Get browser info
       const info = {
-        'Chrome Version': process.versions.chrome,
-        'Electron Version': process.versions.electron,
-        'Node Version': process.versions.node,
+        'Chrome Version': '${process.versions.chrome}',
+        'Electron Version': '${process.versions.electron}',
         'User Data Dir (requested)': '${userDataDir}',
         'CDP Port': '${cdpPort}',
-        'Platform': process.platform,
-        'Architecture': process.arch
+        'Platform': '${process.platform}',
+        'Architecture': '${process.arch}'
       };
 
       // Also check webview partition info
