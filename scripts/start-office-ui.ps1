@@ -1,5 +1,5 @@
 param(
-  [int]$ApiPort = 3001,
+  [int]$ApiPort = 3002,
   [int]$UiPort = 7777
 )
 
@@ -19,7 +19,7 @@ try {
 
   Write-Host "Starting Eigent browser UI at $uiUrl"
   Write-Host "Using backend API at $backendUrl"
-  npm.cmd run dev
+  npm.cmd run dev -- --host 127.0.0.1 --port $UiPort
 } finally {
   Pop-Location
 }

@@ -84,7 +84,7 @@ if (-not $officeApiPort) {
   }
 }
 if (-not $officeApiPort) {
-  $officeApiPort = "3001"
+  $officeApiPort = "3002"
 }
 
 Push-Location $serverDir
