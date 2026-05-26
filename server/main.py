@@ -37,6 +37,7 @@ from app.core.babel import babel_configs
 from app.core.environment import auto_include_routers, env
 from app.api.chat_controller import router as office_chat_router
 from app.api.model_controller import router as model_validation_router
+from app.api.office_compat_controller import router as office_compat_router
 from app.shared.exception.handlers import register_exception_handlers
 from app.shared.middleware import TraceIDMiddleware
 from app.shared.middleware.cors import get_cors_middleware
@@ -57,6 +58,8 @@ auto_include_routers(router, "", "app/api")
 api.include_router(router, prefix=f"{prefix}/v1")
 api.include_router(office_chat_router, prefix=prefix)
 api.include_router(office_chat_router)
+api.include_router(office_compat_router, prefix=prefix)
+api.include_router(office_compat_router)
 api.include_router(model_validation_router, prefix=prefix)
 api.include_router(model_validation_router)
 

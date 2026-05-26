@@ -43,6 +43,94 @@ def _chunk_text(chunk: dict[str, Any]) -> str:
     return content if isinstance(content, str) else ""
 
 
+def _ollama_native_chat_url(base_url: str) -> str:
+    base = base_url.rstrip("/")
+    if base.endswith("/v1"):
+        base = base[: -len("/v1")]
+    return f"{base}/api/chat"
+
+
+def _chat_messages(req: OfficeChatRequest) -> list[dict[str, str]]:
+    language = req.language or "zh-Hant"
+    question = req.question.strip()
+    return [
+        {
+            "role": "system",
+            "content": (
+                "You are an AI assistant for a Taiwan architecture office. "
+                "Respond in Traditional Chinese unless the user asks otherwise. "
+                "Be practical, concise, and provide concrete next steps. "
+                "If the request involves Excel, schedules, drawings, Revit, BIM, "
+                "or office documents, describe the exact table/file structure you would create."
+            ),
+        },
+        {
+            "role": "user",
+            "content": (
+                f"Language preference: {language}\n"
+                f"User task: {question}\n\n"
+                "First briefly understand the task, then provide a useful result or execution plan."
+            ),
+        },
+    ]
+
+
+async def _stream_ollama_native(
+    req: OfficeChatRequest,
+    messages: list[dict[str, str]],
+) -> AsyncIterator[str]:
+    base_url = _normalize_openai_base_url(req.api_url, req.model_platform)
+    chat_url = _ollama_native_chat_url(base_url)
+    payload: dict[str, Any] = {
+        "model": req.model_type,
+        "messages": messages,
+        "stream": True,
+        "think": False,
+        "options": {"temperature": 0.2, "num_predict": 1600},
+    }
+
+    answer = ""
+    yield _sse("notice", {"process_task_id": "", "notice": "Calling local Ollama model..."})
+
+    try:
+        async with httpx.AsyncClient(timeout=httpx.Timeout(120.0, connect=10.0)) as client:
+            async with client.stream("POST", chat_url, json=payload) as response:
+                if response.status_code >= 400:
+                    body = await response.aread()
+                    message = body.decode("utf-8", errors="replace")
+                    yield _sse(
+                        "error",
+                        {
+                            "content": (
+                                f"Local Ollama request failed: "
+                                f"{response.status_code} {message}"
+                            )
+                        },
+                    )
+                    yield _sse("end", f"Local Ollama request failed: {response.status_code}")
+                    return
+
+                async for line in response.aiter_lines():
+                    if not line:
+                        continue
+                    try:
+                        chunk = json.loads(line)
+                    except json.JSONDecodeError:
+                        continue
+                    message = chunk.get("message") or {}
+                    text = message.get("content")
+                    if not isinstance(text, str) or not text:
+                        continue
+                    answer += text
+                    yield _sse("decompose_text", {"content": text})
+    except httpx.HTTPError as exc:
+        yield _sse("error", {"content": f"Local Ollama connection failed: {exc}"})
+        yield _sse("end", f"Local Ollama connection failed: {exc}")
+        return
+
+    yield _sse("end", answer or "The local model returned no visible content.")
+
+
 async def _stream_openai_compatible(req: OfficeChatRequest) -> AsyncIterator[str]:
     base_url = _normalize_openai_base_url(req.api_url, req.model_platform)
     if not base_url:
@@ -55,41 +143,28 @@ async def _stream_openai_compatible(req: OfficeChatRequest) -> AsyncIterator[str
         yield _sse("end", "Model endpoint URL is missing.")
         return
 
-    completion_url = f"{base_url}/chat/completions"
-    language = req.language or "zh-Hant"
     question = req.question.strip()
     if not question:
-        yield _sse("end", "請輸入任務內容。")
+        yield _sse("end", "Please enter a task.")
         return
 
+    messages = _chat_messages(req)
+    if req.model_platform.lower() == "ollama":
+        async for event in _stream_ollama_native(req, messages):
+            yield event
+        return
+
+    completion_url = f"{base_url}/chat/completions"
     payload: dict[str, Any] = {
         "model": req.model_type,
         "stream": True,
         "temperature": 0.2,
-        "messages": [
-            {
-                "role": "system",
-                "content": (
-                    "You are an AI assistant for a Taiwan architecture office. "
-                    "Respond in Traditional Chinese unless the user asks otherwise. "
-                    "Be practical, concise, and provide concrete next steps. "
-                    "If the request involves Excel, schedules, drawings, Revit, BIM, "
-                    "or office documents, describe the exact table/file structure you would create."
-                ),
-            },
-            {
-                "role": "user",
-                "content": (
-                    f"Language preference: {language}\n"
-                    f"User task: {question}\n\n"
-                    "First briefly understand the task, then provide a useful result or execution plan."
-                ),
-            },
-        ],
+        "max_tokens": 1600,
+        "messages": messages,
     }
 
     answer = ""
-    yield _sse("notice", {"process_task_id": "", "notice": "正在呼叫本機 Ollama 模型..."})
+    yield _sse("notice", {"process_task_id": "", "notice": "Calling local model..."})
 
     try:
         async with httpx.AsyncClient(timeout=httpx.Timeout(120.0, connect=10.0)) as client:
@@ -102,7 +177,15 @@ async def _stream_openai_compatible(req: OfficeChatRequest) -> AsyncIterator[str
                 if response.status_code >= 400:
                     body = await response.aread()
                     message = body.decode("utf-8", errors="replace")
-                    yield _sse("error", {"content": f"Local model request failed: {response.status_code} {message}"})
+                    yield _sse(
+                        "error",
+                        {
+                            "content": (
+                                f"Local model request failed: "
+                                f"{response.status_code} {message}"
+                            )
+                        },
+                    )
                     yield _sse("end", f"Local model request failed: {response.status_code}")
                     return
 
@@ -120,13 +203,13 @@ async def _stream_openai_compatible(req: OfficeChatRequest) -> AsyncIterator[str
                     if not text:
                         continue
                     answer += text
-                    yield _sse("decompose_text", {"content": answer})
+                    yield _sse("decompose_text", {"content": text})
     except httpx.HTTPError as exc:
         yield _sse("error", {"content": f"Local model connection failed: {exc}"})
         yield _sse("end", f"Local model connection failed: {exc}")
         return
 
-    yield _sse("end", answer or "本機模型沒有回傳內容。")
+    yield _sse("end", answer or "The local model returned no visible content.")
 
 
 @router.post("/chat")

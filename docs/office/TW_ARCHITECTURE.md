@@ -96,5 +96,13 @@ Larger office topology:
 - Confirm `server/.env.office` is never committed.
 - Confirm `http://127.0.0.1:3001/health` returns `status: ok`, or use the alternate `-ApiPort` value.
 - Use `.env.development` local proxy settings for frontend development.
+- Configure Ollama under `Agents > Models > Ollama`, then save it as the default local provider.
+- In office local mode, `POST /chat` streams responses to the selected local model through the OpenAI-compatible Ollama endpoint. Compatibility routes under `/task/...` and `/chat/{project_id}/...` are available so the browser UI does not fail with 404 while full multi-agent tool execution is being integrated.
 - Before production use, review every configured model provider and MCP connector with the office data policy.
 - Schedule daily PostgreSQL backups and monthly restore tests.
+
+## Current Local Execution Scope
+
+The hardened office sandbox is suitable for local model validation, chat history, provider configuration, and direct local LLM responses. It now supports a browser UI flow where new tasks reach Ollama instead of failing at the missing `/chat` endpoint.
+
+The original upstream multi-agent runtime still needs a full office-safe implementation for project tool execution, including `/task/{project_id}/start` orchestration, file generation, command execution policy, and human approval checkpoints. Until that is completed, use the local chat flow for planning, drafting, checklists, and structured office output; treat actual file modification and document production as a supervised step.

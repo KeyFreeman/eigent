@@ -15,6 +15,7 @@
   - `GET /configs`, `POST /configs`, `PUT /configs/{id}`, `DELETE /configs/{id}`, `GET /config/info`
 - Chat & Data
   - History, snapshots, sharing, etc. in `app/domains/chat/api/`, all persisted to local DB
+  - Office local mode exposes `POST /chat` for SSE streaming to the selected local/OpenAI-compatible model and compatibility routes for `/task/...` UI calls
 - MCP Management (import local/remote MCP servers)
   - `GET /mcps`, `POST /mcp/install`, `POST /mcp/import/{Local|Remote}`, etc.
 
@@ -160,3 +161,13 @@ uv run pybabel compile -d lang -l zh_CN
 ```
 
 For a fully offline environment, only use local models and local MCP servers, and avoid configuring any external Providers or remote MCP addresses.
+
+### Office Local Mode Execution Notes
+
+The office compose profile includes a compatibility layer for the browser UI:
+
+- `POST /chat`: streams a direct local LLM response through SSE.
+- `PUT /task/{project_id}`, `POST /task/{project_id}/start`, `PUT /task/{project_id}/take-control`: accept task state updates from the UI so local deployments do not fail on missing upstream runtime endpoints.
+- `POST /chat/{project_id}/human-reply`, `POST /chat/{project_id}/skip-task`, `DELETE /chat/{project_id}`: no-op compatibility endpoints for current UI controls.
+
+These routes are intended to keep the local-first deployment usable while the full multi-agent tool execution backend is being hardened for office use.
